@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Uma inscrição de Web Push por dispositivo/navegador (protocolo Push API).
+/// Este serviço não conhece "usuário" — quem faz essa associação é o caller
+/// (ex.: bt-pro). Ver docs/CONTEXT.md.
+model Subscription {
+  endpoint  String   @id
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Um envio — imediato ou agendado — de uma notificação a um endpoint
+/// específico ou a todas as inscrições ativas no momento do disparo.
+///
+/// `status`/`Delivery.status` são strings validadas em código
+/// (src/features/notifications/notifications.types.ts), não enum do Postgres
+/// — mesma decisão e mesmo motivo do bt-pro (GOLDEN_RULES §6 lá): adicionar um
+/// status novo não deve exigir migration.
+model Notification {
+  id             String   @id @default(cuid())
+  title          String
+  body           String
+  url            String?
+  data           Json?
+  targetEndpoint String?
+  scheduledAt    DateTime
+  status         String   @default("PENDING")
+  attempts       Int      @default(0)
+  lastError      String?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  deliveries Delivery[]
+
+  @@index([status, scheduledAt])
+}
+
+/// Resultado do envio para UM endpoint dentro do disparo de uma Notification —
+/// é o que responde "foi ou não enviado" por dispositivo. Guarda `endpoint`
+/// como valor solto (sem FK para Subscription): a inscrição pode já ter sido
+/// removida (expirada) depois do envio, e o histórico de entrega deve sobreviver.
+model Delivery {
+  id             String   @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  endpoint       String
+  status         String
+  statusCode     Int?
+  error          String?
+  createdAt      DateTime @default(now())
+
+  @@index([notificationId])
+  @@index([endpoint])
+}

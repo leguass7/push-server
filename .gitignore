@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+
+# Segredos e env local — .env.example continua versionado
+.env
+.env.*
+!.env.example
+
+# Prisma Client gerado no postinstall (`pnpm db:generate`)
+src/generated/
