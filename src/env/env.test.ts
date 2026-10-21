@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { loadEnv } from "./env.js";
+import { loadEnv } from "./env";
 
 const validEnv = {
   DATABASE_URL: "postgresql://user:pass@localhost:5433/db",

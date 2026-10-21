@@ -1,5 +1,11 @@
 # ADR-0001 — Microsserviço dedicado (Express + TypeScript + Prisma + PostgreSQL)
 
+> **Superseded parcialmente pelo [ADR-0005](0005-migracao-nestjs.md)**: o
+> runtime HTTP migrou de Express para NestJS. As decisões #3
+> (Prisma+PostgreSQL), #4 (`web-push`) e #5 (deploy na infra PW2C) deste
+> ADR continuam válidas; a decisão #2 (Express) foi substituída — ver
+> ADR-0005.
+
 ## Contexto
 
 O bt-pro (Next.js na Vercel) precisa agendar envios de Web Push e controlar o

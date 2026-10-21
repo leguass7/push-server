@@ -6,7 +6,9 @@ entrega** — quem recebeu, quem falhou, quem ainda está pendente.
 Evolução versionada do push-server ad-hoc que já roda na infra PW2C: mantém
 o contrato HTTP legado (`/vapid-public-key`, `/subscribe`, `/send`) que o
 [bt-pro](../bt-pro) consome hoje, e adiciona agendamento + histórico por
-trás dele. Ver [`docs/adr/0001-stack-express-prisma-postgres.md`](docs/adr/0001-stack-express-prisma-postgres.md).
+trás dele. Runtime HTTP: NestJS + Prisma/PostgreSQL — ver
+[`docs/adr/0001-stack-express-prisma-postgres.md`](docs/adr/0001-stack-express-prisma-postgres.md)
+e [`docs/adr/0005-migracao-nestjs.md`](docs/adr/0005-migracao-nestjs.md).
 
 ## Por que este serviço existe
 

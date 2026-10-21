@@ -26,9 +26,9 @@ pnpm db:studio           # Prisma Studio
 ## Desenvolvimento
 
 ```bash
-pnpm dev                 # tsx watch — reinicia a cada mudança
+pnpm dev                 # tsx watch src/main.ts — reinicia a cada mudança
 pnpm build                # tsc → dist/
-pnpm start                 # node dist/index.js (produção)
+pnpm start                 # node dist/main.js (produção)
 ```
 
 ## Qualidade
@@ -58,7 +58,7 @@ curl -s "localhost:3000/notifications?limit=5"
 O estado do cutover (o que já rodou, o que falta, invariantes) vive em
 [`ROADMAP.md`](ROADMAP.md). Não troque a stack sem lê-lo.
 
-Hoje (ADR-0001) o deploy continua na mesma infra Docker Swarm/Portainer do
+Hoje (ADR-0001, ADR-0005) o deploy continua na mesma infra Docker Swarm/Portainer do
 push-server legado — só a imagem passa a ser construída a partir do
 `Dockerfile` deste repo (build versionado) em vez do `command:` inline que a
 stack `push-server` usa hoje. Passos, na ordem:
@@ -90,7 +90,7 @@ automatizar. Push remoto e troca da stack só com autorização explícita.
 
 | Suíte | Comando | Como |
 | --- | --- | --- |
-| Vitest | `pnpm test` | Services com fakes (sem Prisma real) + rotas via `supertest` com um `Container` fake — rápido, sem precisar do Postgres de dev no ar. |
+| Vitest | `pnpm test` | Services instanciados direto (`new XService(fakes...)`, sem `TestingModule`) + rotas via `supertest` sobre um `app.getHttpServer()` do `@nestjs/testing` com providers fake — rápido, sem precisar do Postgres de dev no ar. |
 
 Não há suíte e2e contra um Postgres real ainda — o fluxo foi validado
 manualmente (ver seção acima) na criação deste projeto. Se o domínio crescer,

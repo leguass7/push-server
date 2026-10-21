@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { PrismaClient } from "../../generated/prisma/client.js";
-import { createSubscriptionsService } from "./subscriptions.service.js";
+import type { PrismaService } from "../../lib/prisma.service";
+import { SubscriptionsService } from "./subscriptions.service";
 
 function fakePrisma(overrides: Record<string, unknown> = {}) {
   return {
@@ -13,13 +13,13 @@ function fakePrisma(overrides: Record<string, unknown> = {}) {
       count: vi.fn(),
       ...overrides,
     },
-  } as unknown as PrismaClient;
+  } as unknown as PrismaService;
 }
 
-describe("subscriptions.service", () => {
+describe("SubscriptionsService", () => {
   it("upsert grava endpoint + chaves, usando endpoint como chave de conflito", async () => {
     const prisma = fakePrisma();
-    const service = createSubscriptionsService(prisma);
+    const service = new SubscriptionsService(prisma);
 
     await service.upsert({ endpoint: "https://push.example/a", keys: { p256dh: "p", auth: "a" } });
 
@@ -32,7 +32,7 @@ describe("subscriptions.service", () => {
 
   it("remove é idempotente (deleteMany, não delete)", async () => {
     const prisma = fakePrisma();
-    const service = createSubscriptionsService(prisma);
+    const service = new SubscriptionsService(prisma);
 
     await expect(service.remove("endpoint-inexistente")).resolves.toBeUndefined();
     expect(prisma.subscription.deleteMany).toHaveBeenCalledWith({ where: { endpoint: "endpoint-inexistente" } });

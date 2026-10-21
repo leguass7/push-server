@@ -2,7 +2,9 @@
 
 Microsserviço de Web Push (VAPID) com agendamento e rastreio de entrega.
 Evolução versionada do push-server ad-hoc que já roda na infra PW2C — ver
-`docs/adr/0001-stack-express-prisma-postgres.md`.
+`docs/adr/0001-stack-express-prisma-postgres.md` e
+`docs/adr/0005-migracao-nestjs.md` (runtime HTTP migrou de Express para
+NestJS; domínio/contrato inalterados).
 
 ## Fonte de verdade
 
@@ -20,28 +22,31 @@ Para cutover, deploy e estado da infra PW2C, leia
 
 | Caminho | Conteúdo |
 | --- | --- |
-| `src/index.ts` | Bootstrap: porta, scheduler, shutdown gracioso |
-| `src/app.ts` | Monta as rotas Express a partir de um `Container` |
-| `src/container.ts` | Composition root — único lugar que instancia os services |
-| `src/env/` | Validação de ambiente (Zod) |
-| `src/lib/` | Prisma client, logger (pino), webpush, async-handler — sem regra de negócio |
-| `src/middleware/` | Auth (Bearer opt-in), error handler |
+| `src/main.ts` | Bootstrap: `NestFactory.create`, CORS, pino-http, shutdown hooks, porta |
+| `src/app.module.ts` | Módulo raiz — importa `CoreModule` + módulos de feature, registra guard/filter globais |
+| `src/core/core.module.ts` | Composition root (`@Global()`) — único lugar que provê `ENV`/`LOGGER`/`WEB_PUSH`/`PrismaService` |
+| `src/common/` | `AuthGuard` (Bearer opt-in), `AllExceptionsFilter`, `ZodValidationPipe`, `HttpError`, `NotFoundController`/`NotFoundModule` (404 catch-all) |
+| `src/env/` | Validação de ambiente (Zod) — inalterado |
+| `src/lib/` | `PrismaService`, logger (pino), webpush — sem regra de negócio |
 | `src/features/health/` | `GET /health` |
 | `src/features/vapid/` | `GET /vapid-public-key` |
 | `src/features/subscriptions/` | `POST`/`DELETE /subscribe` |
 | `src/features/notifications/` | `POST /send` (legado), CRUD de `/notifications`, `dispatch.service.ts` (envio em si) |
-| `src/features/scheduler/` | Poller que processa Notifications agendadas vencidas |
+| `src/features/scheduler/` | `scheduler.ts` (poller, função pura) + `scheduler.service.ts` (hooks de ciclo de vida do Nest) |
 | `prisma/` | Schema + migrations |
 | `docs/` | Golden Rules, Workflow, Roadmap (cutover PW2C), ADRs |
 | `scripts/` | Utilitários de CLI (gerar VAPID, esperar Postgres) |
 
 ## Stack
 
-- Node 20+, TypeScript strict, ESM puro (`module`/`moduleResolution: NodeNext`
-  — imports relativos **precisam** da extensão `.js`, ver GOLDEN_RULES §7)
-- Express 4 · Prisma 7 (driver adapter `@prisma/adapter-pg`) + PostgreSQL ·
-  Zod · `web-push` · pino/pino-http
-- Vitest + supertest · pnpm
+- Node 20+, TypeScript strict, CommonJS + decorators
+  (`experimentalDecorators`/`emitDecoratorMetadata`, ver GOLDEN_RULES §7 e
+  ADR-0005)
+- NestJS 12 (`@nestjs/platform-express`, que embute Express 5) · Prisma 7
+  (driver adapter `@prisma/adapter-pg`) + PostgreSQL · Zod (validação,
+  via `ZodValidationPipe` — não o `ValidationPipe`/class-validator nativo
+  do Nest) · `web-push` · pino/pino-http
+- Vitest + supertest (`@nestjs/testing`) · pnpm
 
 ## Comandos
 
@@ -104,4 +109,7 @@ Workflow completo (incluindo deploy manual na infra PW2C):
 - Status em TypeScript, banco com strings — nunca enum do Postgres (ADR-0002)
 - Scheduler por polling, não fila; retry simples só para falha total
   (ADR-0003)
-- Imports relativos com extensão `.js`, sem alias `@/` (GOLDEN_RULES §7)
+- Runtime HTTP é NestJS (controllers/modules/DI), não Express; imports
+  relativos **sem** extensão (CommonJS), sem alias `@/`; toda injeção de
+  dependência usa `@Inject(Token)` explícito, mesmo para classes — não
+  depender de `emitDecoratorMetadata` (ver GOLDEN_RULES §7, ADR-0005)

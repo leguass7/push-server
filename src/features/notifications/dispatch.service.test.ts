@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { PrismaClient } from "../../generated/prisma/client.js";
-import type { Logger } from "../../lib/logger.js";
-import type { WebPush } from "../../lib/webpush.js";
-import type { SubscriptionsService } from "../subscriptions/subscriptions.service.js";
-import { createDispatchService } from "./dispatch.service.js";
+import type { Logger } from "../../lib/logger";
+import type { PrismaService } from "../../lib/prisma.service";
+import type { WebPush } from "../../lib/webpush";
+import type { SubscriptionsService } from "../subscriptions/subscriptions.service";
+import { DispatchService } from "./dispatch.service";
 
 function fakeLogger(): Logger {
   return { info: vi.fn(), warn: vi.fn(), error: vi.fn() } as unknown as Logger;
@@ -25,12 +25,7 @@ describe("dispatchToTargets", () => {
     const remove = vi.fn();
     const subscriptions = { remove } as unknown as SubscriptionsService;
 
-    const dispatch = createDispatchService({
-      webpush,
-      prisma: {} as PrismaClient,
-      subscriptions,
-      logger: fakeLogger(),
-    });
+    const dispatch = new DispatchService(webpush, {} as PrismaService, subscriptions, fakeLogger());
 
     const result = await dispatch.dispatchToTargets({ title: "t", body: "b" }, targets);
 
@@ -49,12 +44,7 @@ describe("dispatchToTargets", () => {
     const remove = vi.fn();
     const subscriptions = { remove } as unknown as SubscriptionsService;
 
-    const dispatch = createDispatchService({
-      webpush,
-      prisma: {} as PrismaClient,
-      subscriptions,
-      logger: fakeLogger(),
-    });
+    const dispatch = new DispatchService(webpush, {} as PrismaService, subscriptions, fakeLogger());
 
     const result = await dispatch.dispatchToTargets({ title: "t", body: "b" }, [targets[0]!]);
 
@@ -68,15 +58,10 @@ describe("dispatchToTargets", () => {
 describe("resolveTargets", () => {
   it("retorna só a subscription do endpoint quando targetEndpoint é informado", async () => {
     const findUnique = vi.fn().mockResolvedValue({ endpoint: "x", p256dh: "p", auth: "a" });
-    const prisma = { subscription: { findUnique } } as unknown as PrismaClient;
+    const prisma = { subscription: { findUnique } } as unknown as PrismaService;
     const subscriptions = {} as unknown as SubscriptionsService;
 
-    const dispatch = createDispatchService({
-      webpush: {} as WebPush,
-      prisma,
-      subscriptions,
-      logger: fakeLogger(),
-    });
+    const dispatch = new DispatchService({} as WebPush, prisma, subscriptions, fakeLogger());
 
     const result = await dispatch.resolveTargets("x");
 
@@ -88,12 +73,7 @@ describe("resolveTargets", () => {
     const listAll = vi.fn().mockResolvedValue([{ endpoint: "x", p256dh: "p", auth: "a" }]);
     const subscriptions = { listAll } as unknown as SubscriptionsService;
 
-    const dispatch = createDispatchService({
-      webpush: {} as WebPush,
-      prisma: {} as PrismaClient,
-      subscriptions,
-      logger: fakeLogger(),
-    });
+    const dispatch = new DispatchService({} as WebPush, {} as PrismaService, subscriptions, fakeLogger());
 
     const result = await dispatch.resolveTargets(null);
 

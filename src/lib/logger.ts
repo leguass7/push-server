@@ -1,6 +1,6 @@
 import pino from "pino";
 
-import type { Env } from "../env/env.js";
+import type { Env } from "../env/env";
 
 export function createLogger(env: Pick<Env, "LOG_LEVEL" | "NODE_ENV">) {
   return pino({

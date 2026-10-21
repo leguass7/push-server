@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { NotificationStatus } from "./notifications.types.js";
+import { NotificationStatus } from "./notifications.types";
 
 export const createNotificationBodySchema = z.object({
   title: z.string().min(1).max(200),

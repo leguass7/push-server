@@ -33,6 +33,9 @@ export default tseslint.config(
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
+      // `app.getHttpServer()` (Nest) devolve `any` — é a própria API do
+      // `@nestjs/testing`, não um `any` que escapou do nosso código.
+      "@typescript-eslint/no-unsafe-argument": "off",
     },
   },
   {

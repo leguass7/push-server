@@ -1,32 +1,54 @@
-import pino from "pino";
+import { Test } from "@nestjs/testing";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
+import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createApp } from "./app.js";
-import type { Container } from "./container.js";
-import type { Logger } from "./lib/logger.js";
+import { AllExceptionsFilter } from "./common/all-exceptions.filter";
+import { AuthGuard } from "./common/auth.guard";
+import { NotFoundController } from "./common/not-found.controller";
+import { ENV, LOGGER } from "./core/core.module";
+import { HealthController } from "./features/health/health.controller";
+import { SubscriptionsController } from "./features/subscriptions/subscriptions.controller";
+import { SubscriptionsService } from "./features/subscriptions/subscriptions.service";
+import { VapidController } from "./features/vapid/vapid.controller";
 
-// pino-http precisa de um pino.Logger real (usa `.child()` internamente) —
-// um objeto fake com só info/warn/error quebra em runtime, não em typecheck.
-function fakeLogger(): Logger {
-  return pino({ level: "silent" });
+function fakeLogger() {
+  return { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 }
 
-function fakeContainer(overrides: Partial<Container> = {}): Container {
-  return {
-    prisma: {} as Container["prisma"],
-    subscriptions: { count: vi.fn().mockResolvedValue(2) } as unknown as Container["subscriptions"],
-    dispatch: {} as Container["dispatch"],
-    notifications: {} as Container["notifications"],
-    ...overrides,
-  };
+async function createTestApp(
+  env: { API_TOKEN: string; VAPID_PUBLIC_KEY: string },
+  subscriptionsCount = 2,
+): Promise<INestApplication> {
+  const fakeSubscriptions = { count: vi.fn().mockResolvedValue(subscriptionsCount), upsert: vi.fn(), remove: vi.fn() };
+
+  const moduleRef = await Test.createTestingModule({
+    controllers: [HealthController, VapidController, SubscriptionsController, NotFoundController],
+    providers: [
+      { provide: ENV, useValue: env },
+      { provide: LOGGER, useValue: fakeLogger() },
+      { provide: SubscriptionsService, useValue: fakeSubscriptions },
+      { provide: APP_GUARD, useClass: AuthGuard },
+      { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    ],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  return app;
 }
 
 describe("GET /health", () => {
-  it("responde com a contagem de subscriptions, sem exigir auth", async () => {
-    const app = createApp(fakeContainer(), { API_TOKEN: "segredo", VAPID_PUBLIC_KEY: "pub" }, fakeLogger());
+  let app: INestApplication;
+  afterEach(async () => {
+    await app?.close();
+  });
 
-    const response = await request(app).get("/health");
+  it("responde com a contagem de subscriptions, sem exigir auth", async () => {
+    app = await createTestApp({ API_TOKEN: "segredo", VAPID_PUBLIC_KEY: "pub" });
+
+    const response = await request(app.getHttpServer()).get("/health");
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true, subscriptions: 2 });
@@ -34,18 +56,23 @@ describe("GET /health", () => {
 });
 
 describe("auth (API_TOKEN configurado)", () => {
-  it("rejeita sem Authorization", async () => {
-    const app = createApp(fakeContainer(), { API_TOKEN: "segredo", VAPID_PUBLIC_KEY: "pub" }, fakeLogger());
+  let app: INestApplication;
+  afterEach(async () => {
+    await app?.close();
+  });
 
-    const response = await request(app).get("/vapid-public-key");
+  it("rejeita sem Authorization", async () => {
+    app = await createTestApp({ API_TOKEN: "segredo", VAPID_PUBLIC_KEY: "pub" });
+
+    const response = await request(app.getHttpServer()).get("/vapid-public-key");
 
     expect(response.status).toBe(401);
   });
 
   it("aceita com Bearer correto", async () => {
-    const app = createApp(fakeContainer(), { API_TOKEN: "segredo", VAPID_PUBLIC_KEY: "pub" }, fakeLogger());
+    app = await createTestApp({ API_TOKEN: "segredo", VAPID_PUBLIC_KEY: "pub" });
 
-    const response = await request(app).get("/vapid-public-key").set("Authorization", "Bearer segredo");
+    const response = await request(app.getHttpServer()).get("/vapid-public-key").set("Authorization", "Bearer segredo");
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ publicKey: "pub" });
@@ -53,30 +80,41 @@ describe("auth (API_TOKEN configurado)", () => {
 });
 
 describe("auth desligada (API_TOKEN vazio)", () => {
-  it("permite sem Authorization — contrato legado do bt-pro (ADR-0004)", async () => {
-    const app = createApp(fakeContainer(), { API_TOKEN: "", VAPID_PUBLIC_KEY: "pub" }, fakeLogger());
+  let app: INestApplication;
+  afterEach(async () => {
+    await app?.close();
+  });
 
-    const response = await request(app).get("/vapid-public-key");
+  it("permite sem Authorization — contrato legado do bt-pro (ADR-0004)", async () => {
+    app = await createTestApp({ API_TOKEN: "", VAPID_PUBLIC_KEY: "pub" });
+
+    const response = await request(app.getHttpServer()).get("/vapid-public-key");
 
     expect(response.status).toBe(200);
   });
 });
 
 describe("validação de request", () => {
-  it("POST /subscribe sem keys válidas retorna 400", async () => {
-    const app = createApp(fakeContainer(), { API_TOKEN: "", VAPID_PUBLIC_KEY: "pub" }, fakeLogger());
+  let app: INestApplication;
+  afterEach(async () => {
+    await app?.close();
+  });
 
-    const response = await request(app).post("/subscribe").send({ endpoint: "https://push.example/a" });
+  it("POST /subscribe sem keys válidas retorna 400", async () => {
+    app = await createTestApp({ API_TOKEN: "", VAPID_PUBLIC_KEY: "pub" });
+
+    const response = await request(app.getHttpServer()).post("/subscribe").send({ endpoint: "https://push.example/a" });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe("invalid_request");
   });
 
   it("rota inexistente retorna 404", async () => {
-    const app = createApp(fakeContainer(), { API_TOKEN: "", VAPID_PUBLIC_KEY: "pub" }, fakeLogger());
+    app = await createTestApp({ API_TOKEN: "", VAPID_PUBLIC_KEY: "pub" });
 
-    const response = await request(app).get("/rota-que-nao-existe");
+    const response = await request(app.getHttpServer()).get("/rota-que-nao-existe");
 
     expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "not_found" });
   });
 });

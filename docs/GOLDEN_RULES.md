@@ -2,45 +2,53 @@
 
 > Fonte de verdade das regras de arquitetura, desenvolvimento e código deste
 > serviço. Mesmo espírito e mesmo formato do `docs/GOLDEN_RULES.md` do
-> bt-pro, **adaptado** para a stack daqui: microsserviço Node/Express (sem
-> React/Next), TypeScript strict, Prisma + PostgreSQL, `web-push`.
+> bt-pro, **adaptado** para a stack daqui: microsserviço Node/NestJS,
+> TypeScript strict, Prisma + PostgreSQL, `web-push`. Ver ADR-0005 (migração
+> de Express para NestJS).
 
 ## Stack (contexto)
 
-- Node 20+ · Express 4 · TypeScript (strict) · Prisma + PostgreSQL (driver
-  adapter `@prisma/adapter-pg`, Prisma 7) · Zod · `web-push` · pino · Vitest
-  + supertest · pnpm · imports relativos (sem alias `@/`, ver §7).
+- Node 20+ · NestJS 12 (`@nestjs/platform-express`, Express 5 por baixo) ·
+  TypeScript (strict, CommonJS + decorators) · Prisma + PostgreSQL (driver
+  adapter `@prisma/adapter-pg`, Prisma 7) · Zod · `web-push` · pino ·
+  Vitest + supertest (`@nestjs/testing`) · pnpm · imports relativos (sem
+  alias `@/`, ver §7).
 
 ---
 
 ## 1. Feature-sliced, igual ao bt-pro
 
-- Cada domínio HTTP vive em `src/features/<nome>/`, com rotas, service e
-  schemas **co-localizados**: `<nome>.routes.ts`, `<nome>.service.ts`,
-  `<nome>.schemas.ts`, `<nome>.types.ts`.
-- `src/lib/` é só infraestrutura transversal sem regra de negócio (Prisma
-  client, logger, webpush, async-handler). Se um helper começa a carregar
-  regra de domínio, ele pertence a uma feature, não a `lib/`.
-- `src/container.ts` é o **único** lugar que monta services com suas
-  dependências reais (Prisma, webpush configurado). `app.ts` e `index.ts`
-  recebem um `Container` já pronto — nenhum outro arquivo instancia
-  `PrismaClient` ou chama `configureWebPush` de novo.
+- Cada domínio HTTP vive em `src/features/<nome>/`, com controller, service e
+  schemas **co-localizados**: `<nome>.controller.ts`, `<nome>.service.ts`,
+  `<nome>.schemas.ts`, `<nome>.types.ts`, `<nome>.module.ts`.
+- `src/lib/` é só infraestrutura transversal sem regra de negócio
+  (`PrismaService`, logger, webpush). Se um helper começa a carregar regra
+  de domínio, ele pertence a uma feature, não a `lib/`.
+- `src/common/` é infraestrutura HTTP transversal do Nest (não é "regra de
+  negócio" nem é "uma feature"): `AuthGuard`, `AllExceptionsFilter`,
+  `ZodValidationPipe`, `HttpError`, `NotFoundController`/`NotFoundModule`.
+- `src/core/core.module.ts` é o **único** lugar que monta os providers
+  transversais com suas dependências reais (`ENV`, `LOGGER`, `WEB_PUSH`,
+  `PrismaService`) — `@Global()`, importado uma vez em `app.module.ts`.
+  Nenhum outro arquivo instancia `PrismaClient`/chama `configureWebPush` de
+  novo; toda feature injeta esses tokens via `@Inject(...)`.
 - Estrutura de referência:
 
-  ```
+  ```text
   src/
-  ├── index.ts          # bootstrap: porta, scheduler, shutdown
-  ├── app.ts            # monta rotas a partir de um Container
-  ├── container.ts       # composition root dos services
-  ├── env/               # validação de ambiente (Zod)
-  ├── lib/                # prisma, logger, webpush, async-handler — sem regra de negócio
-  ├── middleware/         # auth, error-handler
+  ├── main.ts             # bootstrap: NestFactory, CORS, shutdown hooks, porta
+  ├── app.module.ts        # módulo raiz — importa CoreModule + features, guard/filter globais
+  ├── core/
+  │   └── core.module.ts    # composition root dos providers transversais
+  ├── common/                # AuthGuard, AllExceptionsFilter, ZodValidationPipe, HttpError, 404 catch-all
+  ├── env/                    # validação de ambiente (Zod)
+  ├── lib/                     # PrismaService, logger, webpush — sem regra de negócio
   └── features/
       ├── health/
       ├── vapid/
       ├── subscriptions/
-      ├── notifications/   # + dispatch.service.ts (envio em si)
-      └── scheduler/
+      ├── notifications/        # + dispatch.service.ts (envio em si)
+      └── scheduler/             # scheduler.ts (poller puro) + scheduler.service.ts (hooks Nest)
   ```
 
 ---
@@ -60,14 +68,18 @@
 
 ## 3. Validação — Zod é a fonte de verdade (BLOQUEANTE)
 
-- Todo body/query de rota passa por um schema Zod antes de chegar ao
-  service — nunca confiar em `req.body`/`req.query` cru, nem dentro do
-  service (o service recebe tipos já validados do schema).
-- Handler assíncrono de rota **sempre** passa por `asyncHandler`
-  (`src/lib/async-handler.ts`) — Express 4 não encaminha rejeições de
-  `async` para o error middleware por conta própria; esquecer o wrapper
-  faz o erro (incluindo `ZodError`) travar o request em silêncio em vez de
-  responder 400/500. Ver `src/middleware/error-handler.ts`.
+- Todo body/query de rota passa por `@Body(new ZodValidationPipe(schema))`/
+  `@Query(new ZodValidationPipe(schema))` (`src/common/zod-validation.pipe.ts`)
+  antes de chegar ao service — nunca confiar em `req.body`/`req.query` cru,
+  nem dentro do service (o service recebe tipos já validados do schema).
+  **Não** usar o `ValidationPipe`/`class-validator` nativo do Nest — Zod é a
+  única fonte de verdade de validação neste projeto.
+- Erros não precisam de `try/catch` por rota: o Nest encaminha toda
+  rejeição de pipe/guard/controller `async` para `AllExceptionsFilter`
+  (`src/common/all-exceptions.filter.ts`, registrado global via
+  `APP_FILTER`), que mapeia `ZodError`/`HttpError`/exceção genérica para
+  `400`/status específico/`500` — diferente do Express 4 antigo, que
+  exigia um `asyncHandler` manual para isso.
 
 ---
 
@@ -94,29 +106,35 @@
 
 ---
 
-## 6. Serviços puros de efeito colateral explícito
+## 6. Serviços com dependências explícitas no construtor (BLOQUEANTE)
 
-- Um `create*Service(deps)` recebe suas dependências por parâmetro
-  (`prisma`, `webpush`, `logger`, outros services) e retorna um objeto de
-  funções — nunca importa um singleton global de outro módulo além de
-  `src/lib/prisma.ts` (a única instância de verdade, compartilhada via
-  `container.ts`). Isso é o que torna os services testáveis com fakes
-  simples (ver `*.test.ts` ao lado de cada service) sem precisar de um
-  framework de mock.
+- Todo `@Injectable()` recebe suas dependências via construtor, **cada
+  parâmetro com `@Inject(Token)` explícito** — mesmo para dependências que
+  são classes (ex.: `@Inject(PrismaService) private readonly prisma: PrismaService`),
+  nunca confiando em inferência de tipo via `emitDecoratorMetadata`. Por quê:
+  `tsx`/esbuild (usado em `pnpm dev` e pelo Vitest) **não** emite
+  `design:paramtypes` — um construtor sem `@Inject()` explícito resolve no
+  `tsc` build mas quebra em dev/teste com "Nest can't resolve dependencies".
+- Nenhum service importa um singleton global de outro módulo além dos
+  tokens de `src/core/core.module.ts` (`ENV`, `LOGGER`, `WEB_PUSH`,
+  `PrismaService`). Isso é o que torna os services testáveis com fakes
+  simples via `new XService(fake1, fake2, ...)` (ver `*.test.ts` ao lado de
+  cada service) sem precisar de um `TestingModule` do Nest.
 
 ---
 
 ## 7. Imports relativos, não alias (decisão deste projeto, diferente do bt-pro)
 
-- `tsconfig.json` usa `module`/`moduleResolution: NodeNext` (ESM puro,
-  `"type": "module"` no `package.json`) — todo import relativo **precisa**
-  da extensão `.js` (`from "./env.js"`), mesmo apontando para um arquivo
-  `.ts`. É a regra do Node ESM, não uma escolha de estilo.
-- Por isso este projeto **não** usa alias `@/*` como o bt-pro: path aliases
-  exigem uma camada de resolução extra (loader/`tsconfig-paths`) que some
-  do runtime em produção se não for replicada com cuidado — para um serviço
-  deste tamanho, import relativo direto é mais simples e não quebra ao
-  trocar de executor (`tsx` em dev, `node dist/` em produção).
+- `tsconfig.json` usa `module: "commonjs"`/`moduleResolution: "node"` (sem
+  `"type": "module"` no `package.json`) — padrão NestJS, com
+  `experimentalDecorators`/`emitDecoratorMetadata` ligados para os
+  decorators (`@Module`, `@Injectable`, `@Controller`, etc.) funcionarem.
+  Imports relativos **sem** extensão (`from "./env"`). **Revogado** o
+  regime anterior (Node ESM puro com `.js` obrigatório) de quando o serviço
+  rodava Express direto via `tsx`/`node dist/` — ver ADR-0005.
+- Por isso este projeto **não** usa alias `@/*` como o bt-pro: para um
+  serviço deste tamanho, import relativo direto é mais simples e não exige
+  mapear o alias em mais de um lugar (`tsconfig.json`, bundler, editor).
 
 ---
 
@@ -148,7 +166,7 @@
 
 Mesma regra do bt-pro (lá, GOLDEN_RULES §13), aplicada aqui:
 
-1. Ao subir `pnpm dev`/`node dist/index.js` para verificação, **encerrar o
+1. Ao subir `pnpm dev`/`node dist/main.js` para verificação, **encerrar o
    processo** ao terminar — não deixar `node`/`tsx` órfão.
 2. **Liberar a porta** (padrão **3000**) antes de concluir a tarefa.
 3. `pnpm docker:up`/`docker:down` são o par certo para o Postgres de dev —
@@ -161,7 +179,7 @@ Mesma regra do bt-pro (lá, GOLDEN_RULES §13), aplicada aqui:
 ## Revisão (cíclico)
 
 Ao implementar/revisar: **estrutura/composition root (§1) → DRY (§2) →
-validação + asyncHandler (§3) → status em código (§4) → tipagem (§5) →
-services com deps explícitas (§6) → imports relativos com `.js` (§7) → logs
-(§8) → scheduler/retry documentado no ADR (§9) → portas/processos locais
-(§10)**. Bloqueantes reprovam; o resto é alerta.
+validação Zod + exception filter (§3) → status em código (§4) → tipagem
+(§5) → services com `@Inject` explícito (§6) → imports relativos sem
+extensão (§7) → logs (§8) → scheduler/retry documentado no ADR (§9) →
+portas/processos locais (§10)**. Bloqueantes reprovam; o resto é alerta.
