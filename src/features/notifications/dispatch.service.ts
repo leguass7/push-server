@@ -1,12 +1,12 @@
-import { Inject, Injectable } from "@nestjs/common";
-import type { WebPushError } from "web-push";
+import { Inject, Injectable } from '@nestjs/common';
+import type { WebPushError } from 'web-push';
 
-import { LOGGER, WEB_PUSH } from "../../core/core.module";
-import { PrismaService } from "../../lib/prisma.service";
-import type { Logger } from "../../lib/logger";
-import type { WebPush } from "../../lib/webpush";
-import { SubscriptionsService } from "../subscriptions/subscriptions.service";
-import { DeliveryStatus } from "./notifications.types";
+import { LOGGER, WEB_PUSH } from '../../core/core.module';
+import { PrismaService } from '../../lib/prisma.service';
+import type { Logger } from '../../lib/logger';
+import type { WebPush } from '../../lib/webpush';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { DeliveryStatus } from './notifications.types';
 
 type TargetSubscription = { endpoint: string; p256dh: string; auth: string };
 
@@ -17,7 +17,7 @@ type DispatchResult = {
 };
 
 function isWebPushError(error: unknown): error is WebPushError {
-  return typeof error === "object" && error !== null && "statusCode" in error;
+  return typeof error === 'object' && error !== null && 'statusCode' in error;
 }
 
 /**
@@ -35,7 +35,7 @@ export class DispatchService {
   ) {}
 
   async dispatchToTargets(payload: Record<string, unknown>, targets: TargetSubscription[]): Promise<DispatchResult> {
-    const deliveries: DispatchResult["deliveries"] = [];
+    const deliveries: DispatchResult['deliveries'] = [];
     let sent = 0;
     let failed = 0;
 
@@ -61,7 +61,7 @@ export class DispatchService {
         if (statusCode === 404 || statusCode === 410) {
           await this.subscriptions.remove(target.endpoint);
           deliveries.push({ endpoint: target.endpoint, status: DeliveryStatus.EXPIRED, statusCode });
-          this.logger.info({ endpoint: target.endpoint, statusCode }, "subscription_expired_removed");
+          this.logger.info({ endpoint: target.endpoint, statusCode }, 'subscription_expired_removed');
           continue;
         }
 
@@ -72,7 +72,7 @@ export class DispatchService {
           ...(statusCode !== undefined ? { statusCode } : {}),
           error: message,
         });
-        this.logger.warn({ endpoint: target.endpoint, statusCode, error: message }, "push_send_failed");
+        this.logger.warn({ endpoint: target.endpoint, statusCode, error: message }, 'push_send_failed');
       }
     }
 

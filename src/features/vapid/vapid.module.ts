@@ -1,6 +1,6 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
 
-import { VapidController } from "./vapid.controller";
+import { VapidController } from './vapid.controller';
 
 @Module({
   controllers: [VapidController],

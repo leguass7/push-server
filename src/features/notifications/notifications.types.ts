@@ -4,20 +4,20 @@
  * código, não migration.
  */
 export const NotificationStatus = {
-  PENDING: "PENDING",
-  PROCESSING: "PROCESSING",
-  SENT: "SENT",
-  PARTIALLY_SENT: "PARTIALLY_SENT",
-  FAILED: "FAILED",
-  CANCELED: "CANCELED",
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  SENT: 'SENT',
+  PARTIALLY_SENT: 'PARTIALLY_SENT',
+  FAILED: 'FAILED',
+  CANCELED: 'CANCELED',
 } as const;
 
 export type NotificationStatus = (typeof NotificationStatus)[keyof typeof NotificationStatus];
 
 export const DeliveryStatus = {
-  SENT: "SENT",
-  FAILED: "FAILED",
-  EXPIRED: "EXPIRED",
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
 } as const;
 
 export type DeliveryStatus = (typeof DeliveryStatus)[keyof typeof DeliveryStatus];

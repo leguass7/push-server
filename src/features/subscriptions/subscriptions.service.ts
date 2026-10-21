@@ -1,7 +1,7 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import { PrismaService } from "../../lib/prisma.service";
-import type { SubscribeBody } from "./subscriptions.schemas";
+import { PrismaService } from '../../lib/prisma.service';
+import type { SubscribeBody } from './subscriptions.schemas';
 
 /**
  * Classe `@Injectable()` com deps explícitas no construtor — equivalente,

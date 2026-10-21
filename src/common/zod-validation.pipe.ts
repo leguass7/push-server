@@ -1,5 +1,5 @@
-import type { PipeTransform } from "@nestjs/common";
-import type { ZodSchema } from "zod";
+import type { PipeTransform } from '@nestjs/common';
+import type { ZodSchema } from 'zod';
 
 /**
  * Validação — Zod é a fonte de verdade (GOLDEN_RULES §3): todo body/query de

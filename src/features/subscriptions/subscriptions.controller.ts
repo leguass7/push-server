@@ -1,10 +1,15 @@
-import { Body, Controller, Delete, HttpCode, Inject, Post } from "@nestjs/common";
+import { Body, Controller, Delete, HttpCode, Inject, Post } from '@nestjs/common';
 
-import { ZodValidationPipe } from "../../common/zod-validation.pipe";
-import { SubscriptionsService } from "./subscriptions.service";
-import { subscribeBodySchema, unsubscribeBodySchema, type SubscribeBody, type UnsubscribeBody } from "./subscriptions.schemas";
+import { ZodValidationPipe } from '../../common/zod-validation.pipe';
+import { SubscriptionsService } from './subscriptions.service';
+import {
+  subscribeBodySchema,
+  unsubscribeBodySchema,
+  type SubscribeBody,
+  type UnsubscribeBody,
+} from './subscriptions.schemas';
 
-@Controller("subscribe")
+@Controller('subscribe')
 export class SubscriptionsController {
   constructor(@Inject(SubscriptionsService) private readonly subscriptions: SubscriptionsService) {}
 

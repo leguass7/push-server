@@ -125,10 +125,14 @@
 
 ## 7. Imports relativos, não alias (decisão deste projeto, diferente do bt-pro)
 
-- `tsconfig.json` usa `module: "commonjs"`/`moduleResolution: "node"` (sem
+- `tsconfig.json` usa `module: "commonjs"`/`moduleResolution: "bundler"` (sem
   `"type": "module"` no `package.json`) — padrão NestJS, com
   `experimentalDecorators`/`emitDecoratorMetadata` ligados para os
   decorators (`@Module`, `@Injectable`, `@Controller`, etc.) funcionarem.
+  O TypeScript 6 depreca `moduleResolution: "node"` (`node10`).
+  `"bundler"` substitui esse valor e preserva o emit CommonJS.
+  O TypeScript 6 deixa `types` vazio. `types` fica `["node"]` para
+  `process` e `NodeJS`.
   Imports relativos **sem** extensão (`from "./env"`). **Revogado** o
   regime anterior (Node ESM puro com `.js` obrigatório) de quando o serviço
   rodava Express direto via `tsx`/`node dist/` — ver ADR-0005.

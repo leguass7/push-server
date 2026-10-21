@@ -1,6 +1,6 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
 
-import { NotFoundController } from "./not-found.controller";
+import { NotFoundController } from './not-found.controller';
 
 /**
  * Módulo próprio (não controller direto do `AppModule`) — Nest registra as

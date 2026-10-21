@@ -1,6 +1,6 @@
-import { All, Controller } from "@nestjs/common";
+import { All, Controller } from '@nestjs/common';
 
-import { HttpError } from "./http-error";
+import { HttpError } from './http-error';
 
 /**
  * Equivalente ao `notFoundHandler` do Express: qualquer rota não registrada
@@ -19,8 +19,8 @@ import { HttpError } from "./http-error";
  */
 @Controller()
 export class NotFoundController {
-  @All("/{*splat}")
+  @All('/{*splat}')
   notFound(): never {
-    throw new HttpError(404, "not_found");
+    throw new HttpError(404, 'not_found');
   }
 }

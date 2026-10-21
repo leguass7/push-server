@@ -1,13 +1,13 @@
-import { Global, Module } from "@nestjs/common";
+import { Global, Module } from '@nestjs/common';
 
-import { loadEnv, type Env } from "../env/env";
-import { createLogger, type Logger } from "../lib/logger";
-import { PrismaService } from "../lib/prisma.service";
-import { configureWebPush, type WebPush } from "../lib/webpush";
+import { loadEnv, type Env } from '../env/env';
+import { createLogger, type Logger } from '../lib/logger';
+import { PrismaService } from '../lib/prisma.service';
+import { configureWebPush, type WebPush } from '../lib/webpush';
 
-export const ENV = Symbol("ENV");
-export const LOGGER = Symbol("LOGGER");
-export const WEB_PUSH = Symbol("WEB_PUSH");
+export const ENV = Symbol('ENV');
+export const LOGGER = Symbol('LOGGER');
+export const WEB_PUSH = Symbol('WEB_PUSH');
 
 /**
  * Composition root — equivalente ao antigo `container.ts`: único lugar que

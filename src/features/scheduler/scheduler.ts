@@ -1,5 +1,5 @@
-import type { Logger } from "../../lib/logger";
-import type { NotificationsService } from "../notifications/notifications.service";
+import type { Logger } from '../../lib/logger';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Poller simples: a cada `intervalMs`, busca Notifications PENDING com
@@ -29,11 +29,11 @@ export function createScheduler(deps: {
         try {
           await notifications.processOne(notification.id);
         } catch (error) {
-          logger.error({ err: error, notificationId: notification.id }, "scheduler_process_one_failed");
+          logger.error({ err: error, notificationId: notification.id }, 'scheduler_process_one_failed');
         }
       }
     } catch (error) {
-      logger.error({ err: error }, "scheduler_tick_failed");
+      logger.error({ err: error }, 'scheduler_tick_failed');
     } finally {
       ticking = false;
     }
@@ -41,12 +41,12 @@ export function createScheduler(deps: {
 
   return {
     start() {
-      logger.info({ intervalMs, batchSize }, "scheduler_started");
+      logger.info({ intervalMs, batchSize }, 'scheduler_started');
       timer = setInterval(() => void tick(), intervalMs);
     },
     stop() {
       if (timer) clearInterval(timer);
-      logger.info("scheduler_stopped");
+      logger.info('scheduler_stopped');
     },
     /** Exposto para testes — roda um ciclo sem esperar o setInterval. */
     tick,

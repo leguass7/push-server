@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /** Mesmo shape que o browser devolve em `PushSubscription.toJSON()`. */
 export const subscribeBodySchema = z.object({

@@ -1,10 +1,10 @@
-import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from "@nestjs/common";
+import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy } from '@nestjs/common';
 
-import { ENV, LOGGER } from "../../core/core.module";
-import type { Env } from "../../env/env";
-import type { Logger } from "../../lib/logger";
-import { NotificationsService } from "../notifications/notifications.service";
-import { createScheduler, type Scheduler } from "./scheduler";
+import { ENV, LOGGER } from '../../core/core.module';
+import type { Env } from '../../env/env';
+import type { Logger } from '../../lib/logger';
+import { NotificationsService } from '../notifications/notifications.service';
+import { createScheduler, type Scheduler } from './scheduler';
 
 /**
  * Wrapper Nest em volta de `createScheduler` (função pura). Usa os hooks de

@@ -1,8 +1,8 @@
-import { Controller, Get, Inject } from "@nestjs/common";
+import { Controller, Get, Inject } from '@nestjs/common';
 
-import { SubscriptionsService } from "../subscriptions/subscriptions.service";
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
-@Controller("health")
+@Controller('health')
 export class HealthController {
   constructor(@Inject(SubscriptionsService) private readonly subscriptions: SubscriptionsService) {}
 

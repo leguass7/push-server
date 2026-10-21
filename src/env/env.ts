@@ -1,18 +1,18 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  DATABASE_URL: z.string().min(1, "DATABASE_URL é obrigatória"),
-  VAPID_SUBJECT: z.string().min(1, "VAPID_SUBJECT é obrigatória (mailto: ou https://)"),
-  VAPID_PUBLIC_KEY: z.string().min(1, "VAPID_PUBLIC_KEY é obrigatória"),
-  VAPID_PRIVATE_KEY: z.string().min(1, "VAPID_PRIVATE_KEY é obrigatória"),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória'),
+  VAPID_SUBJECT: z.string().min(1, 'VAPID_SUBJECT é obrigatória (mailto: ou https://)'),
+  VAPID_PUBLIC_KEY: z.string().min(1, 'VAPID_PUBLIC_KEY é obrigatória'),
+  VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY é obrigatória'),
   /** Vazio = autenticação desligada. Ver docs/adr/0004-compatibilidade-com-bt-pro.md. */
-  API_TOKEN: z.string().optional().default(""),
+  API_TOKEN: z.string().optional().default(''),
   POLL_INTERVAL_MS: z.coerce.number().int().positive().default(30_000),
   DISPATCH_BATCH_SIZE: z.coerce.number().int().positive().default(20),
   MAX_SEND_ATTEMPTS: z.coerce.number().int().positive().default(3),
-  LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -26,9 +26,9 @@ export type Env = z.infer<typeof envSchema>;
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const result = envSchema.safeParse(source);
   if (!result.success) {
-    console.error("[env] configuração inválida:");
+    console.error('[env] configuração inválida:');
     for (const issue of result.error.issues) {
-      console.error(`  - ${issue.path.join(".")}: ${issue.message}`);
+      console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
     }
     process.exit(1);
   }

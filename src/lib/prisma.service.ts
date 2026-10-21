@@ -1,7 +1,7 @@
-import { Injectable, type OnModuleDestroy } from "@nestjs/common";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from '../generated/prisma/client';
 
 /**
  * Prisma 7 exige um driver adapter explícito (não lê mais `datasource.url`
@@ -16,7 +16,7 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
   constructor() {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
-      throw new Error("DATABASE_URL não está definida");
+      throw new Error('DATABASE_URL não está definida');
     }
     super({ adapter: new PrismaPg({ connectionString }) });
   }

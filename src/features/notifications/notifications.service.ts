@@ -1,21 +1,21 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from '@nestjs/common';
 
-import { HttpError } from "../../common/http-error";
-import { ENV, LOGGER } from "../../core/core.module";
-import type { Env } from "../../env/env";
-import type { Delivery, Notification, Prisma } from "../../generated/prisma/client";
-import type { Logger } from "../../lib/logger";
-import { PrismaService } from "../../lib/prisma.service";
-import { DispatchService } from "./dispatch.service";
-import type { ListNotificationsQuery } from "./notifications.schemas";
-import { NotificationStatus } from "./notifications.types";
+import { HttpError } from '../../common/http-error';
+import { ENV, LOGGER } from '../../core/core.module';
+import type { Env } from '../../env/env';
+import type { Delivery, Notification, Prisma } from '../../generated/prisma/client';
+import type { Logger } from '../../lib/logger';
+import { PrismaService } from '../../lib/prisma.service';
+import { DispatchService } from './dispatch.service';
+import type { ListNotificationsQuery } from './notifications.schemas';
+import { NotificationStatus } from './notifications.types';
 
 export type NotificationWithDeliveries = Notification & { deliveries: Delivery[] };
 
 export function hasDeliveries(
   notification: Notification | NotificationWithDeliveries,
 ): notification is NotificationWithDeliveries {
-  return Object.hasOwn(notification, "deliveries");
+  return Object.hasOwn(notification, 'deliveries');
 }
 
 export type CreateNotificationInput = {
@@ -33,7 +33,7 @@ function nextRetryAt(attempts: number): Date {
   return new Date(Date.now() + delayMs);
 }
 
-const withDeliveries = { deliveries: { orderBy: { createdAt: "asc" as const } } };
+const withDeliveries = { deliveries: { orderBy: { createdAt: 'asc' as const } } };
 
 @Injectable()
 export class NotificationsService {
@@ -86,7 +86,7 @@ export class NotificationsService {
         data: {
           status: NotificationStatus.FAILED,
           attempts: notification.attempts + 1,
-          lastError: "no_subscriptions",
+          lastError: 'no_subscriptions',
         },
         include: withDeliveries,
       });
@@ -115,12 +115,17 @@ export class NotificationsService {
 
     if (result.sent === 0) {
       const willRetry = attempts < this.env.MAX_SEND_ATTEMPTS;
-      this.logger.warn({ notificationId, attempts, willRetry }, "notification_failed");
+      this.logger.warn({ notificationId, attempts, willRetry }, 'notification_failed');
       return this.prisma.notification.update({
         where: { id: notificationId },
         data: willRetry
-          ? { status: NotificationStatus.PENDING, attempts, scheduledAt: nextRetryAt(attempts), lastError: "all_targets_failed" }
-          : { status: NotificationStatus.FAILED, attempts, lastError: "all_targets_failed" },
+          ? {
+              status: NotificationStatus.PENDING,
+              attempts,
+              scheduledAt: nextRetryAt(attempts),
+              lastError: 'all_targets_failed',
+            }
+          : { status: NotificationStatus.FAILED, attempts, lastError: 'all_targets_failed' },
         include: withDeliveries,
       });
     }
@@ -143,10 +148,10 @@ export class NotificationsService {
   async getById(id: string) {
     const notification = await this.prisma.notification.findUnique({
       where: { id },
-      include: { deliveries: { orderBy: { createdAt: "asc" } } },
+      include: { deliveries: { orderBy: { createdAt: 'asc' } } },
     });
     if (!notification) {
-      throw new HttpError(404, "notification_not_found");
+      throw new HttpError(404, 'notification_not_found');
     }
     return notification;
   }
@@ -154,7 +159,7 @@ export class NotificationsService {
   async list(query: ListNotificationsQuery) {
     const items = await this.prisma.notification.findMany({
       where: query.status ? { status: query.status } : undefined,
-      orderBy: { scheduledAt: "desc" },
+      orderBy: { scheduledAt: 'desc' },
       take: query.limit,
       ...(query.cursor ? { skip: 1, cursor: { id: query.cursor } } : {}),
     });
@@ -166,7 +171,7 @@ export class NotificationsService {
   async cancel(id: string) {
     const notification = await this.prisma.notification.findUnique({ where: { id } });
     if (!notification) {
-      throw new HttpError(404, "notification_not_found");
+      throw new HttpError(404, 'notification_not_found');
     }
     if (notification.status !== NotificationStatus.PENDING) {
       throw new HttpError(409, `cannot_cancel_status_${notification.status.toLowerCase()}`);
@@ -180,7 +185,7 @@ export class NotificationsService {
   async findDueBatch(limit: number) {
     return this.prisma.notification.findMany({
       where: { status: NotificationStatus.PENDING, scheduledAt: { lte: new Date() } },
-      orderBy: { scheduledAt: "asc" },
+      orderBy: { scheduledAt: 'asc' },
       take: limit,
     });
   }

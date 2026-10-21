@@ -1,9 +1,9 @@
-import { Inject, Injectable, type CanActivate, type ExecutionContext } from "@nestjs/common";
-import type { Request } from "express";
+import { Inject, Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
+import type { Request } from 'express';
 
-import { ENV } from "../core/core.module";
-import type { Env } from "../env/env";
-import { HttpError } from "./http-error";
+import { ENV } from '../core/core.module';
+import type { Env } from '../env/env';
+import { HttpError } from './http-error';
 
 /**
  * Autenticação por token compartilhado (Bearer), opt-in via `API_TOKEN`.
@@ -24,15 +24,15 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
 
-    if (!this.env.API_TOKEN || request.path === "/health") {
+    if (!this.env.API_TOKEN || request.path === '/health') {
       return true;
     }
 
-    const header = request.header("authorization") ?? "";
-    const [scheme, token] = header.split(" ");
+    const header = request.header('authorization') ?? '';
+    const [scheme, token] = header.split(' ');
 
-    if (scheme !== "Bearer" || token !== this.env.API_TOKEN) {
-      throw new HttpError(401, "unauthorized");
+    if (scheme !== 'Bearer' || token !== this.env.API_TOKEN) {
+      throw new HttpError(401, 'unauthorized');
     }
 
     return true;

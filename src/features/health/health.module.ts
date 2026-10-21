@@ -1,7 +1,7 @@
-import { Module } from "@nestjs/common";
+import { Module } from '@nestjs/common';
 
-import { SubscriptionsModule } from "../subscriptions/subscriptions.module";
-import { HealthController } from "./health.controller";
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [SubscriptionsModule],

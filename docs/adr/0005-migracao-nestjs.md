@@ -74,10 +74,11 @@ longa duração, mesmo motivo do ADR-0001.
    `cors` por baixo (dependência do `@nestjs/platform-express`) — mesmo
    comportamento do antigo `app.use(cors())`, incluindo o preflight
    `OPTIONS` automático.
-10. **`"type": "module"` removido**; `tsconfig.json` passa a usar
-    `module: "commonjs"`/`moduleResolution: "node"` + `experimentalDecorators`/
+10. **`"type": "module"` removido**; `tsconfig.json` usa
+    `module: "commonjs"`/`moduleResolution: "bundler"` + `experimentalDecorators`/
     `emitDecoratorMetadata` — padrão NestJS. Imports relativos **sem**
-    extensão `.js`.
+    extensão `.js`. `moduleResolution: "node"` (`node10`) ficou deprecado
+    no TypeScript 6. `"bundler"` mantém o mesmo emit CommonJS.
 11. **Testes HTTP**: os testes de contrato (antes com `supertest` sobre um
     `Express app` construído manualmente) agora usam `@nestjs/testing`
     (`Test.createTestingModule(...).compile()`) + `supertest` sobre
