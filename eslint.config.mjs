@@ -22,7 +22,7 @@ export default defineConfig(
         projectService: {
           // Arquivos de config na raiz fora do `include` do tsconfig.json
           // (`src/**/*.ts`) — `scripts/**` já cai em `globalIgnores` acima.
-          allowDefaultProject: ['prisma.config.ts', 'vitest.config.ts'],
+          allowDefaultProject: ['prisma.config.ts', 'vitest.config.mts'],
         },
         tsconfigRootDir: import.meta.dirname,
       },
