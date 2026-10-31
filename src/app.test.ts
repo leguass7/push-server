@@ -4,6 +4,8 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { readAppVersion } from './lib/app-version';
+
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { AuthGuard } from './common/auth.guard';
 import { NotFoundController } from './common/not-found.controller';
@@ -51,7 +53,7 @@ describe('GET /health', () => {
     const response = await request(app.getHttpServer()).get('/health');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ ok: true, subscriptions: 2 });
+    expect(response.body).toEqual({ ok: true, subscriptions: 2, version: readAppVersion() });
   });
 });
 
