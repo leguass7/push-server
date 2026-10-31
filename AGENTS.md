@@ -14,6 +14,10 @@ Leia **[`docs/GOLDEN_RULES.md`](docs/GOLDEN_RULES.md)** e
 contrato legado que este serviço precisa preservar para não quebrar o
 bt-pro em produção.
 
+Para implementar uma mudança até produção, siga o **Fluxo de
+implementação** em [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — conventional
+commits, PR de release, imagem `latest` + `X.Y.Z`, `GET /health.version`.
+
 Para cutover, deploy e estado da infra PW2C, leia
 **[`docs/ROADMAP.md`](docs/ROADMAP.md)** — a stack Swarm em produção ainda
 é o serviço ad-hoc; este repo ainda não a substituiu.
@@ -34,7 +38,9 @@ Para cutover, deploy e estado da infra PW2C, leia
 | `src/features/notifications/` | `POST /send` (legado), CRUD de `/notifications`, `dispatch.service.ts` (envio em si) |
 | `src/features/scheduler/` | `scheduler.ts` (poller, função pura) + `scheduler.service.ts` (hooks de ciclo de vida do Nest) |
 | `prisma/` | Schema + migrations |
-| `docs/` | Golden Rules, Workflow, Roadmap (cutover PW2C), ADRs |
+| `docs/` | Golden Rules, Workflow, Roadmap (cutover PW2C), stack Portainer, ADRs |
+| `docs/pw2c-stack.yml` | Stack Swarm local (gitignored — o repo é público) |
+| `.github/workflows/ci.yml` | verify em PR/`main`; release-please em `main`; imagem no GitHub Release |
 | `scripts/` | Utilitários de CLI (gerar VAPID, esperar Postgres) |
 
 ## Stack
@@ -79,11 +85,15 @@ Workflow completo (incluindo deploy manual na infra PW2C):
 | Inscrições (Subscription) | `src/features/subscriptions/` | Done ✅ — contrato idêntico ao push-server legado |
 | Envio legado (`/send`) | `src/features/notifications/` | Done ✅ — ADR-0004 |
 | Agendamento + rastreio (`/notifications`) | `src/features/notifications/` + `scheduler/` | Done ✅ — v1, retry simples (ADR-0003) |
-| Cutover da stack Swarm PW2C | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Pendente — Postgres `push_server` já provisionado; falta importar `subscriptions.json` e trocar a imagem |
+| Cutover da stack Swarm PW2C | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Pendente — dump legado importado para `Subscription` (cópia em `backups/`, gitignored); stack nova já no ar como `push-server-v2` (YAML local gitignored) |
 
 ## Regras de trabalho
 
 - **Escopo mínimo** — mudanças focadas na tarefa; sem refactor oportunista.
+- **Fluxo até produção:** [`docs/WORKFLOW.md`](docs/WORKFLOW.md)
+  (Fluxo de implementação). Conventional commits (`feat:`, `fix:`).
+  Não bump de versão nem changelog na entrega da feature — isso é o PR
+  de release. Não esperar imagem nova em push de `chore`/`docs`.
 - **Golden Rules (bloqueantes):** [`docs/GOLDEN_RULES.md`](docs/GOLDEN_RULES.md)
 - **Nunca** alterar o shape de resposta das rotas legadas
   (`/vapid-public-key`, `/subscribe`, `/send`) sem atualizar o ADR-0004 **e**
