@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import type { INestApplication } from '@nestjs/common';
+import type { Server } from 'node:http';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,6 +42,10 @@ async function createTestApp(
   return app;
 }
 
+function http(app: INestApplication) {
+  return request(app.getHttpServer() as Server);
+}
+
 describe('GET /health', () => {
   let app: INestApplication;
   afterEach(async () => {
@@ -50,7 +55,7 @@ describe('GET /health', () => {
   it('responde com a contagem de subscriptions, sem exigir auth', async () => {
     app = await createTestApp({ API_TOKEN: 'segredo', VAPID_PUBLIC_KEY: 'pub' });
 
-    const response = await request(app.getHttpServer()).get('/health');
+    const response = await http(app).get('/health');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ ok: true, subscriptions: 2, version: readAppVersion() });
@@ -66,7 +71,7 @@ describe('auth (API_TOKEN configurado)', () => {
   it('rejeita sem Authorization', async () => {
     app = await createTestApp({ API_TOKEN: 'segredo', VAPID_PUBLIC_KEY: 'pub' });
 
-    const response = await request(app.getHttpServer()).get('/vapid-public-key');
+    const response = await http(app).get('/vapid-public-key');
 
     expect(response.status).toBe(401);
   });
@@ -74,7 +79,7 @@ describe('auth (API_TOKEN configurado)', () => {
   it('aceita com Bearer correto', async () => {
     app = await createTestApp({ API_TOKEN: 'segredo', VAPID_PUBLIC_KEY: 'pub' });
 
-    const response = await request(app.getHttpServer()).get('/vapid-public-key').set('Authorization', 'Bearer segredo');
+    const response = await http(app).get('/vapid-public-key').set('Authorization', 'Bearer segredo');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ publicKey: 'pub' });
@@ -90,7 +95,7 @@ describe('auth desligada (API_TOKEN vazio)', () => {
   it('permite sem Authorization — contrato legado do bt-pro (ADR-0004)', async () => {
     app = await createTestApp({ API_TOKEN: '', VAPID_PUBLIC_KEY: 'pub' });
 
-    const response = await request(app.getHttpServer()).get('/vapid-public-key');
+    const response = await http(app).get('/vapid-public-key');
 
     expect(response.status).toBe(200);
   });
@@ -105,7 +110,7 @@ describe('validação de request', () => {
   it('POST /subscribe sem keys válidas retorna 400', async () => {
     app = await createTestApp({ API_TOKEN: '', VAPID_PUBLIC_KEY: 'pub' });
 
-    const response = await request(app.getHttpServer()).post('/subscribe').send({ endpoint: 'https://push.example/a' });
+    const response = await http(app).post('/subscribe').send({ endpoint: 'https://push.example/a' });
 
     expect(response.status).toBe(400);
     const body: { error: string } = response.body;
@@ -115,7 +120,7 @@ describe('validação de request', () => {
   it('rota inexistente retorna 404', async () => {
     app = await createTestApp({ API_TOKEN: '', VAPID_PUBLIC_KEY: 'pub' });
 
-    const response = await request(app.getHttpServer()).get('/rota-que-nao-existe');
+    const response = await http(app).get('/rota-que-nao-existe');
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: 'not_found' });
