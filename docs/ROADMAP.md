@@ -70,10 +70,9 @@ Ordem obrigatória:
 1. Grave os secrets GitHub `REGISTRY`, `REGISTRY_USERNAME` e
    `REGISTRY_PASSWORD`. Dump do legado já está em
    `backups/legacy-subscriptions.json` (local) e na tabela `Subscription`.
-2. Publique a primeira imagem (`workflow_dispatch` ou merge do PR de
-   release) em `{REGISTRY}/push-server:latest` e
-   `{REGISTRY}/push-server:X.Y.Z`. Ver [`WORKFLOW.md`](WORKFLOW.md)
-   (Fluxo de implementação).
+2. Publique a primeira imagem (`pnpm release` em `main`) em
+   `{REGISTRY}/push-server:latest` e `{REGISTRY}/push-server:X.Y.Z`.
+   Ver [`WORKFLOW.md`](WORKFLOW.md) (Fluxo de implementação).
 3. Cole a YAML local `docs/pw2c-stack.yml` (gitignored) na stack
    `push-server` do Portainer (modo Swarm), com `DATABASE_URL` encoded e
    VAPID iguais às atuais. `API_TOKEN` vazio. Porta e domínio iguais.

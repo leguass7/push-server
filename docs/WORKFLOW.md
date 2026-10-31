@@ -45,10 +45,6 @@ pnpm verify                   # lint + typecheck + test + build — rodar antes 
 
 Siga esta ordem em toda mudança que vai para `main`. Não pule passo.
 O pipeline está em [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
-O release-please lê
-[`release-please-config.json`](../release-please-config.json) e
-[`.release-please-manifest.json`](../.release-please-manifest.json)
-(última versão publicada).
 
 ### 1. Implemente numa branch
 
@@ -60,15 +56,15 @@ O release-please lê
 
 ### 2. Commit (conventional commits)
 
-O prefixo da mensagem decide se haverá release e o que entra no
-[`CHANGELOG.md`](../CHANGELOG.md). O release-please **não** lê PR title;
-lê o commit que chegou em `main`.
+O prefixo da mensagem decide o bump quando você rodar `pnpm release`.
+Não edite `package.json` nem o [`CHANGELOG.md`](../CHANGELOG.md) na
+entrega da feature.
 
 | Prefixo | Próxima versão | Entra no changelog |
 | --- | --- | --- |
-| `feat:` | minor (`0.2.1` → `0.3.0`) | sim |
-| `fix:` | patch (`0.2.1` → `0.2.2`) | sim |
-| `feat!:` ou `BREAKING CHANGE:` | em `0.x` é minor; depois de `1.0.0` é major | sim |
+| `feat:` | minor (`0.3.0` → `0.4.0`) | sim |
+| `fix:` | patch (`0.3.0` → `0.3.1`) | sim |
+| `feat!:` ou `BREAKING CHANGE:` | major (`0.3.0` → `1.0.0`) | sim |
 | `chore:`, `docs:`, `test:`, `ci:` | nenhum bump | não |
 
 Uma ideia por commit. Assunto no imperativo, em português.
@@ -79,36 +75,34 @@ fix: recusa subscribe sem keys
 docs: descreve o fluxo de release
 ```
 
-Não edite a versão em `package.json` nem acrescente a entrada nova do
-changelog na entrega da feature. O PR de release faz os dois.
-
 ### 3. Pull request para `main`
 
 O job `verify` tem de passar (`pnpm verify`). Sem isso não mescle.
+Push em `main` **não** publica imagem.
 
-### 4. Merge em `main`
+### 4. Release local (changelog + tag + GitHub Release)
 
-O push em `main` roda `verify` de novo e o `release-please`.
+Em `main` limpa, autenticado no `gh`:
 
-- Se o commit for `feat` / `fix` / breaking: o bot abre ou atualiza um
-  PR de release (`chore(main): release X.Y.Z`) com bump de
-  `package.json`, entrada nova no `CHANGELOG.md` e atualização do
-  manifest.
-- Se o commit for só `chore` / `docs` / `test` / `ci`: não há PR de
-  release e **não** sai imagem nova.
+```bash
+pnpm release:dry    # conferir bump e changelog, sem gravar
+pnpm release        # pede confirmação, depois grava
+```
 
-A imagem **não** é publicada neste passo.
+O `release-it` (via [`scripts/release.mjs`](../scripts/release.mjs)):
 
-### 5. Merge do PR de release
+1. Lê os conventional commits desde a última tag.
+2. Sobe `package.json` e prepende o [`CHANGELOG.md`](../CHANGELOG.md).
+3. Commit `chore: release X.Y.Z`, tag `vX.Y.Z`, push.
+4. Cria o GitHub Release (`gh`).
 
-1. Revise o changelog gerado.
-2. Mescle o PR de release.
-3. O release-please cria a tag `vX.Y.Z` e o GitHub Release.
+Esse último passo já foi validado na `v0.3.0`: o evento `release`
+dispara o job `deploy`.
 
-### 6. Deploy da imagem
+### 5. Deploy da imagem (CI)
 
-Quando o release-please cria a tag neste mesmo run, o job `deploy`
-constrói a imagem e publica duas tags:
+O job `deploy` só roda em GitHub Release publicado (ou
+`workflow_dispatch`). Publica:
 
 - `{REGISTRY}/push-server:latest`
 - `{REGISTRY}/push-server:X.Y.Z` (sem o `v` da tag git)
@@ -116,18 +110,10 @@ constrói a imagem e publica duas tags:
 Depois chama o webhook do Portainer. A stack Swarm usa `:latest`.
 A YAML local `docs/pw2c-stack.yml` é gitignored (repo público).
 
-O `GITHUB_TOKEN` do Actions, ao criar o GitHub Release, **não** dispara
-um segundo workflow `on: release`. Por isso o deploy fica no mesmo
-workflow, na saída `release_created` do release-please.
+`workflow_dispatch` republica `latest` e a versão atual do
+`package.json`. Use só em emergência.
 
-No GitHub: Settings → Actions → General → Workflow permissions →
-marque **Allow GitHub Actions to create and approve pull requests**.
-Sem isso o release-please não abre o PR de release.
-
-`workflow_dispatch` publica `latest` e a versão atual do `package.json`
-sem esperar o PR de release. Use só em emergência.
-
-### 7. Confira a versão no ar
+### 6. Confira a versão no ar
 
 `GET /health` responde `{ ok, subscriptions, version }`. `version` é a
 string de `package.json` da imagem que está rodando. Tem de coincidir
@@ -162,8 +148,8 @@ repo. Porta 3095 e overlay próprios permanecem, para o domínio
    local em `backups/legacy-subscriptions.json`, gitignored). Confira a
    contagem se o legado tiver recebido opt-in depois de 31 de outubro de
    2026.
-2. Publique a primeira imagem: `workflow_dispatch` no workflow CI/CD,
-   ou o merge do primeiro PR de release (tags `latest` e `X.Y.Z`).
+2. Publique a primeira imagem: `pnpm release` em `main` (tags `latest`
+   e `X.Y.Z`), ou `workflow_dispatch` em emergência.
 3. No Portainer, edite a stack `push-server` e cole o conteúdo local
    de `docs/pw2c-stack.yml`. Preencha as env vars no editor:
    - `DATABASE_URL` — senha com `#`/`@` percent-encoded (`#` → `%23`,
@@ -182,9 +168,9 @@ aplicados (20 de outubro de 2026).
 
 ### CI/CD (depois do primeiro deploy)
 
-O fluxo contínuo (commit → PR de release → imagem `latest` + `X.Y.Z` →
-webhook) está na seção **Fluxo de implementação** acima. Não publique
-imagem em todo push de `main`.
+O fluxo contínuo (commit em `main` → `pnpm release` → imagem `latest` +
+`X.Y.Z` → webhook) está na seção **Fluxo de implementação** acima. Não
+publique imagem em todo push de `main`.
 
 Secrets do repositório GitHub:
 
