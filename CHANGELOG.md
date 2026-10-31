@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/leguass7/push-server/compare/v0.2.1...v0.3.0) (2026-10-31)
+
+### Features
+
+* inclui `version` no `GET /health` para conferir a imagem no ar
+
+### CI
+
+* publica `latest` e `X.Y.Z` no GitHub Release, com release-please
+* imagem de produção menor; dumps e stack Swarm local gitignored
+  (repositório público)
+
 ## 0.2.1
 
 - Atualização de dependências e correção das vulnerabilidades reportadas

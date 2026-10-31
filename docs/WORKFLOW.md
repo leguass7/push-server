@@ -120,6 +120,10 @@ O `GITHUB_TOKEN` do Actions, ao criar o GitHub Release, **não** dispara
 um segundo workflow `on: release`. Por isso o deploy fica no mesmo
 workflow, na saída `release_created` do release-please.
 
+No GitHub: Settings → Actions → General → Workflow permissions →
+marque **Allow GitHub Actions to create and approve pull requests**.
+Sem isso o release-please não abre o PR de release.
+
 `workflow_dispatch` publica `latest` e a versão atual do `package.json`
 sem esperar o PR de release. Use só em emergência.
 
