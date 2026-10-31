@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/leguass7/push-server/compare/push-server-v0.3.0...push-server-v0.4.0) (2026-10-31)
+
+
+### Features
+
+* inclui version no GET /health ([3ad812f](https://github.com/leguass7/push-server/commit/3ad812f24a76443042364e2b24c141f6d94c9044))
+* release-please, version no /health e imagem enxuta ([89a7d29](https://github.com/leguass7/push-server/commit/89a7d294b92cf9edcc7e4e05c8ca6473f09a6d30))
+
 ## [0.3.0](https://github.com/leguass7/push-server/compare/v0.2.1...v0.3.0) (2026-10-31)
 
 ### Features
