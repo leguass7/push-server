@@ -16,7 +16,8 @@ bt-pro em produção.
 
 Para implementar uma mudança até produção, siga o **Fluxo de
 implementação** em [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — conventional
-commits, PR de release, imagem `latest` + `X.Y.Z`, `GET /health.version`.
+commits, `pnpm release` local (changelog + tag + GitHub Release), imagem
+`latest` + `X.Y.Z` no evento `release`, `GET /health.version`.
 
 Para cutover, deploy e estado da infra PW2C, leia
 **[`docs/ROADMAP.md`](docs/ROADMAP.md)** — a stack Swarm em produção ainda
@@ -40,7 +41,7 @@ Para cutover, deploy e estado da infra PW2C, leia
 | `prisma/` | Schema + migrations |
 | `docs/` | Golden Rules, Workflow, Roadmap (cutover PW2C), stack Portainer, ADRs |
 | `docs/pw2c-stack.yml` | Stack Swarm local (gitignored — o repo é público) |
-| `.github/workflows/ci.yml` | verify em PR/`main`; release-please em `main`; imagem no GitHub Release |
+| `.github/workflows/ci.yml` | verify em PR/`main`; imagem `latest` + `X.Y.Z` no GitHub Release |
 | `scripts/` | Utilitários de CLI (gerar VAPID, esperar Postgres) |
 
 ## Stack
@@ -92,8 +93,9 @@ Workflow completo (incluindo deploy manual na infra PW2C):
 - **Escopo mínimo** — mudanças focadas na tarefa; sem refactor oportunista.
 - **Fluxo até produção:** [`docs/WORKFLOW.md`](docs/WORKFLOW.md)
   (Fluxo de implementação). Conventional commits (`feat:`, `fix:`).
-  Não bump de versão nem changelog na entrega da feature — isso é o PR
-  de release. Não esperar imagem nova em push de `chore`/`docs`.
+  Não bump de versão nem changelog na entrega da feature — isso é
+  `pnpm release` em `main`. Não esperar imagem nova em push de
+  `chore`/`docs`.
 - **Golden Rules (bloqueantes):** [`docs/GOLDEN_RULES.md`](docs/GOLDEN_RULES.md)
 - **Nunca** alterar o shape de resposta das rotas legadas
   (`/vapid-public-key`, `/subscribe`, `/send`) sem atualizar o ADR-0004 **e**

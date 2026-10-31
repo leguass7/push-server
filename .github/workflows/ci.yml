@@ -19,7 +19,7 @@ jobs:
   verify:
     name: verify
     if: github.event_name != 'release'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
@@ -36,39 +36,10 @@ jobs:
       - name: lint + typecheck + test + build
         run: pnpm verify
 
-  release-please:
-    name: release-please
-    needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-    steps:
-      - uses: googleapis/release-please-action@v5
-        id: release
-
   deploy:
     name: deploy
-    needs: [verify, release-please]
-    # GITHUB_TOKEN criando o GitHub Release não dispara o evento
-    # `release` noutro workflow. O deploy tem de ocorrer neste run
-    # quando o release-please acaba de criar a tag.
-    if: >-
-      always() &&
-      (
-        github.event_name == 'release' ||
-        github.event_name == 'workflow_dispatch' ||
-        needs.release-please.outputs.release_created == 'true'
-      ) &&
-      (
-        github.event_name == 'release' ||
-        needs.verify.result == 'success'
-      )
-    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
@@ -77,9 +48,6 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
-            echo "value=${TAG#v}" >> "$GITHUB_OUTPUT"
-          elif [ -n "${{ needs.release-please.outputs.tag_name }}" ]; then
-            TAG="${{ needs.release-please.outputs.tag_name }}"
             echo "value=${TAG#v}" >> "$GITHUB_OUTPUT"
           else
             echo "value=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
