@@ -1,9 +1,9 @@
 # push-server — instruções para agentes
 
 Microsserviço de Web Push (VAPID) com agendamento e rastreio de entrega.
-Evolução versionada do push-server ad-hoc que já roda na infra PW2C — ver
-`docs/adr/0001-stack-express-prisma-postgres.md` e
-`docs/adr/0005-migracao-nestjs.md` (runtime HTTP migrou de Express para
+Substituiu o push-server ad-hoc da infra PW2C (stack `push-server-v2`,
+31 de outubro de 2026) — ver `docs/adr/0001-stack-express-prisma-postgres.md`
+e `docs/adr/0005-migracao-nestjs.md` (runtime HTTP migrou de Express para
 NestJS; domínio/contrato inalterados).
 
 ## Fonte de verdade
@@ -19,9 +19,9 @@ implementação** em [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — conventional
 commits, `pnpm release` local (changelog + tag + GitHub Release), imagem
 `latest` + `X.Y.Z` no evento `release`, `GET /health.version`.
 
-Para cutover, deploy e estado da infra PW2C, leia
-**[`docs/ROADMAP.md`](docs/ROADMAP.md)** — a stack Swarm em produção ainda
-é o serviço ad-hoc; este repo ainda não a substituiu.
+Para deploy e estado da infra PW2C, leia
+**[`docs/ROADMAP.md`](docs/ROADMAP.md)** — produção é a stack
+`push-server-v2`; o volume do legado permanece no `compute03`.
 
 ## Estrutura do repositório
 
@@ -86,7 +86,7 @@ Workflow completo (incluindo deploy manual na infra PW2C):
 | Inscrições (Subscription) | `src/features/subscriptions/` | Done ✅ — contrato idêntico ao push-server legado |
 | Envio legado (`/send`) | `src/features/notifications/` | Done ✅ — ADR-0004 |
 | Agendamento + rastreio (`/notifications`) | `src/features/notifications/` + `scheduler/` | Done ✅ — v1, retry simples (ADR-0003) |
-| Cutover da stack Swarm PW2C | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Pendente — dump legado importado para `Subscription` (cópia em `backups/`, gitignored); stack nova já no ar como `push-server-v2` (YAML local gitignored) |
+| Cutover da stack Swarm PW2C | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Feito em 31 de outubro de 2026 — produção é `push-server-v2`; volume legado retido no `compute03` |
 
 ## Regras de trabalho
 
@@ -102,13 +102,12 @@ Workflow completo (incluindo deploy manual na infra PW2C):
   avisar que o bt-pro (`push-server-client.ts`, outro repositório) também
   precisa mudar.
 - **Push remoto / deploy / troca da stack Swarm:** só quando o usuário
-  autorizar explicitamente. Não antecipe o cutover. Ordem e invariantes:
+  autorizar explicitamente. Produção atual e invariantes:
   [`docs/ROADMAP.md`](docs/ROADMAP.md).
-- **Não** rotacionar `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` no cutover —
+- **Não** rotacionar `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` —
   invalida as inscrições existentes.
-- **Não** atualizar a stack com a imagem deste repo enquanto a tabela
-  `Subscription` estiver vazia e o volume legado ainda tiver
-  `subscriptions.json`.
+- **Não** apagar o volume legado `push-server_push-server-data` sem
+  autorização. A tabela `Subscription` é a fonte de verdade.
 - Senha de `DATABASE_URL` com `#` ou `@`: percent-encode na URL
   (`#` → `%23`, `@` → `%40`). Sem isso o parser trata `postgres` como host.
 - **Verificação antes de encerrar:** `pnpm verify`.

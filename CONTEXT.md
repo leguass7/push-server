@@ -10,13 +10,14 @@ Estado da substituição do serviço em produção:
 ## Language
 
 **push-server legado**:
-A stack Swarm `push-server` que já roda na infra PW2C (serviço
+A stack Swarm `push-server` que rodava na infra PW2C (serviço
 `push-server_push-server`, imagem `node:20-alpine`, `command:` inline).
-Guarda inscrições em `subscriptions.json` num volume Docker, sem Postgres.
-Este repositório a substitui sem mudar o contrato HTTP (ADR-0004). O
-cutover ainda não ocorreu — ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
-_Avoid_: tratar o código deste repo como se já estivesse no Swarm; apagar
-o volume legado antes de importar as Subscriptions para o Postgres.
+Guardava inscrições em `subscriptions.json` num volume Docker, sem Postgres.
+Este repositório a substituiu sem mudar o contrato HTTP (ADR-0004). Cutover
+em 31 de outubro de 2026: stack `push-server-v2`, volume legado retido no
+`compute03` — ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
+_Avoid_: tratar o volume legado como fonte de verdade (a tabela
+`Subscription` é); apagar o volume antes de um período estável.
 
 **Subscription**:
 Uma inscrição de Web Push de **um dispositivo/navegador** — `endpoint`

@@ -70,7 +70,7 @@ antes de ativar em produção.
 - [`docs/GOLDEN_RULES.md`](docs/GOLDEN_RULES.md) — regras de arquitetura e código
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — comandos, testes, fluxo de
   implementação (commit → release → imagem) e deploy
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — cutover da stack Swarm na infra PW2C
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — estado da stack Swarm na infra PW2C
 - `docs/pw2c-stack.yml` — stack Swarm local para o Portainer (gitignored)
 - [`docs/adr/`](docs/adr/) — decisões de arquitetura
 - [`CONTEXT.md`](CONTEXT.md) — glossário do domínio

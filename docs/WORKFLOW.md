@@ -137,31 +137,12 @@ O estado do cutover (o que já rodou, o que falta, invariantes) vive em
 [`ROADMAP.md`](ROADMAP.md). Não troque a stack sem lê-lo.
 
 A YAML da stack fica só na máquina, em `docs/pw2c-stack.yml` (gitignored).
-Não versionar. Nome da stack no Portainer: `push-server` — o mesmo do
-legado. Colar por cima substitui o `command:` inline pela imagem deste
-repo. Porta 3095 e overlay próprios permanecem, para o domínio
-`push-server.pw2c.s4sbr.com` continuar válido.
+Não versionar. Nome da stack no Portainer: `push-server-v2`. O NPM aponta
+`push-server.pw2c.s4sbr.com` para `push-server-v2_push-server:3000` na
+overlay `infra-shared_shared_net`. Porta publicada 3096 fica de fallback.
 
-### Primeiro deploy (manual, uma vez)
-
-1. O dump do volume legado já foi importado para `Subscription` (cópia
-   local em `backups/legacy-subscriptions.json`, gitignored). Confira a
-   contagem se o legado tiver recebido opt-in depois de 31 de outubro de
-   2026.
-2. Publique a primeira imagem: `pnpm release` em `main` (tags `latest`
-   e `X.Y.Z`), ou `workflow_dispatch` em emergência.
-3. No Portainer, edite a stack `push-server` e cole o conteúdo local
-   de `docs/pw2c-stack.yml`. Preencha as env vars no editor:
-   - `DATABASE_URL` — senha com `#`/`@` percent-encoded (`#` → `%23`,
-     `@` → `%40`)
-   - `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` — iguais às
-     da stack legado (trocar a chave invalida as inscrições)
-   - `API_TOKEN` — vazio no primeiro deploy (ADR-0004)
-4. Ative o webhook do serviço `push-server` no Portainer. Grave a URL no
-   secret `PORTAINER_WEBHOOK_URL` deste repositório GitHub.
-5. Grave os secrets do registry (`REGISTRY`, `REGISTRY_USERNAME`,
-   `REGISTRY_PASSWORD`). O host e o usuário não ficam no YAML — o repo é
-   público.
+O primeiro deploy (imagem, stack, webhook, secrets) já ocorreu em 31 de
+outubro de 2026. Estado e invariantes: [`ROADMAP.md`](ROADMAP.md).
 
 Postgres `push_server` e a migration `20261020195219_init` já estão
 aplicados (20 de outubro de 2026).
