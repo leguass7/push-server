@@ -1,6 +1,6 @@
 {
   "name": "push-server",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Microsserviço de Web Push (VAPID) com agendamento e rastreio de envio — NestJS",
   "packageManager": "pnpm@12.6.0",
