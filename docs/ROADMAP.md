@@ -10,7 +10,11 @@ Este repositório substitui a stack Swarm `push-server` (serviço
 
 Inscrições, `/send` legado, `/notifications` e o scheduler da v1 estão
 prontos. A imagem de produção é o `Dockerfile` deste repo (`node:22-alpine`,
-`CMD node dist/index.js`). A stack Swarm **ainda não** usa essa imagem.
+`CMD node dist/main.js`). A stack Swarm **ainda não** usa essa imagem.
+
+A YAML da stack fica só local (`docs/pw2c-stack.yml`, gitignored). O CI/CD em
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) constrói a
+imagem `{REGISTRY}/push-server:latest` e aciona o webhook do Portainer.
 
 ### Stack ainda em produção (legado)
 
@@ -30,8 +34,10 @@ prontos. A imagem de produção é o `Dockerfile` deste repo (`node:22-alpine`,
 - Banco: `push_server`, schema `public`.
 - Criado em 20 de outubro de 2026. Migration `20261020195219_init` aplicada
   (`pnpm db:migrate`).
-- Tabelas `Subscription`, `Notification` e `Delivery` existem e estão
-  vazias.
+- Tabelas `Subscription`, `Notification` e `Delivery` existem.
+  `Subscription` recebeu o dump do volume legado (1 inscrição em
+  31 de outubro de 2026). Cópia local em `backups/legacy-subscriptions.json`
+  (gitignored).
 - A senha do usuário tem `#` e `@`. Em `DATABASE_URL`, percent-encode
   (`#` → `%23`, `@` → `%40`). Sem isso o parser trata `postgres` como host
   (`ENOTFOUND`).
@@ -49,7 +55,9 @@ cutover.
 2. `API_TOKEN` permanece vazio no primeiro deploy da imagem nova
    (ADR-0004). Ativar depois, coordenado com o bt-pro.
 3. Não atualize a stack para a imagem deste repo com `Subscription` vazia
-   enquanto o volume legado ainda tem inscrições. Importe o JSON antes.
+   enquanto o volume legado ainda tem inscrições. O dump de 31 de outubro
+   de 2026 já foi importado (1 inscrição); confirme a contagem antes do
+   cutover se o legado tiver recebido opt-in depois disso.
 4. Rode `pnpm db:migrate` (`prisma migrate deploy`) antes de o serviço
    novo apontar para o Postgres. A migration `init` já está aplicada.
 5. Push remoto e mudança da stack Swarm só com autorização explícita do
@@ -59,13 +67,20 @@ cutover.
 
 Ordem obrigatória:
 
-1. Importe `subscriptions.json` do volume `push-server_push-server-data`
-   para a tabela `Subscription`. Confira a contagem depois.
-2. Construa e publique a imagem (`docker build` + registry da infra PW2C).
-3. Atualize a stack Swarm: imagem nova, `DATABASE_URL` (senha encoded),
-   VAPID iguais às atuais, `API_TOKEN` vazio. Porta e domínio iguais.
-4. Confira `GET /health` e `GET /vapid-public-key` no domínio atual.
-5. Depois do cutover estável: ative `API_TOKEN` no serviço e no
+1. Grave os secrets GitHub `REGISTRY`, `REGISTRY_USERNAME` e
+   `REGISTRY_PASSWORD`. Dump do legado já está em
+   `backups/legacy-subscriptions.json` (local) e na tabela `Subscription`.
+2. Publique a primeira imagem (`workflow_dispatch` ou merge do PR de
+   release) em `{REGISTRY}/push-server:latest` e
+   `{REGISTRY}/push-server:X.Y.Z`. Ver [`WORKFLOW.md`](WORKFLOW.md)
+   (Fluxo de implementação).
+3. Cole a YAML local `docs/pw2c-stack.yml` (gitignored) na stack
+   `push-server` do Portainer (modo Swarm), com `DATABASE_URL` encoded e
+   VAPID iguais às atuais. `API_TOKEN` vazio. Porta e domínio iguais.
+4. Ative o webhook do serviço no Portainer e grave
+   `PORTAINER_WEBHOOK_URL`.
+5. Confira `GET /health` e `GET /vapid-public-key` no domínio atual.
+6. Depois do cutover estável: ative `API_TOKEN` no serviço e no
    `push-server-client.ts` do bt-pro, na ordem do ADR-0004.
 
 Como executar o deploy: [`WORKFLOW.md`](WORKFLOW.md) (seção Deploy).
@@ -74,7 +89,6 @@ Como executar o deploy: [`WORKFLOW.md`](WORKFLOW.md) (seção Deploy).
 
 - Teste de integração de `processOne` contra o Postgres de dev, com
   `web-push` mockado — ver [`WORKFLOW.md`](WORKFLOW.md).
-- CI/CD da imagem. Hoje o deploy da stack é manual no Portainer.
 
 ## Fora deste cutover
 
@@ -87,5 +101,6 @@ Como executar o deploy: [`WORKFLOW.md`](WORKFLOW.md) (seção Deploy).
 
 - Contrato legado: [`adr/0004-compatibilidade-com-bt-pro.md`](adr/0004-compatibilidade-com-bt-pro.md)
 - Stack e persistência: [`adr/0001-stack-express-prisma-postgres.md`](adr/0001-stack-express-prisma-postgres.md)
+- Stack Portainer: `docs/pw2c-stack.yml` (local, gitignored)
 - Schema: `prisma/schema.prisma`, migration `20261020195219_init`
 - Env do runtime: `src/env/env.ts`

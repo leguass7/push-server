@@ -53,7 +53,7 @@ pnpm verify    # lint + typecheck + test + build
 | `GET /notifications` | `?status=&limit=&cursor=` | `{ items, nextCursor }` |
 | `GET /notifications/:id` | — | Notification + `deliveries[]` (quem recebeu, quem falhou) |
 | `DELETE /notifications/:id` | — | Cancela (só se `PENDING`); `409` se já processada |
-| `GET /health` | — | `{ ok, subscriptions }` — sem auth, usado por healthcheck |
+| `GET /health` | — | `{ ok, subscriptions, version }` — sem auth, usado por healthcheck (`version` = `package.json`) |
 
 `endpoint` omitido/`null` = broadcast (todas as inscrições ativas no
 disparo). Ver [`CONTEXT.md`](CONTEXT.md) para os termos (`Delivery`,
@@ -68,8 +68,10 @@ antes de ativar em produção.
 ## Documentação
 
 - [`docs/GOLDEN_RULES.md`](docs/GOLDEN_RULES.md) — regras de arquitetura e código
-- [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — comandos, testes, deploy
+- [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — comandos, testes, fluxo de
+  implementação (commit → release → imagem) e deploy
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — cutover da stack Swarm na infra PW2C
+- `docs/pw2c-stack.yml` — stack Swarm local para o Portainer (gitignored)
 - [`docs/adr/`](docs/adr/) — decisões de arquitetura
 - [`CONTEXT.md`](CONTEXT.md) — glossário do domínio
 - [`AGENTS.md`](AGENTS.md) — instruções para agentes de IA trabalhando neste repo
