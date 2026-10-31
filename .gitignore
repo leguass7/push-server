@@ -12,3 +12,9 @@ coverage/
 
 # Prisma Client gerado no postinstall (`pnpm db:generate`)
 src/generated/
+
+# Dump local das inscrições do volume legado (repo público — não versionar)
+backups/*.json
+
+# Stack Swarm com host do registry e porta da infra — não versionar
+docs/pw2c-stack.yml
