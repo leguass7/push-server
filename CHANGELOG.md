@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1](https://github.com/leguass7/push-server/compare/v0.3.0...v0.3.1) (2026-10-31)
+
+### Bug Fixes
+
+* tipa o servidor HTTP nos testes ([82a5baa](https://github.com/leguass7/push-server/commit/82a5baaddd6529860595f6e26e1d52cf4a4f9e72))
+
 ## [0.3.0](https://github.com/leguass7/push-server/compare/v0.2.1...v0.3.0) (2026-10-31)
 
 ### Features
